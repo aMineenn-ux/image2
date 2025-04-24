@@ -51,8 +51,8 @@
 
     // Pan move listener - handles the horizontal and vertical dragging
     mc.on('panmove', function (ev) {
-        // ev.deltaX is the change in pixels horizontally since panstart
-        // ev.deltaY is the change in pixels vertically since panstart
+        ev.deltaX is the change in pixels horizontally since panstart
+        ev.deltaY is the change in pixels vertically since panstart
 
         // Calculate the new X and Y positions based on initial position and drag amount
         let newX = initialPosition.x + (ev.deltaX * panSensitivity);
