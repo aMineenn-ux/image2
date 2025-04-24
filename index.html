@@ -35,7 +35,7 @@
         // --- Variables for tracking state ---
         var currentScale = { x: 1, y: 1, z: 1 }; // Store current scale factors
         var initialPosition = { x: 0, y: 0, z: 0 }; // To store position at the start of a pan
-        var panSensitivity = 0.0000001; // Adjust this for drag speed (pixels to world units) - Remis une valeur par défaut
+        var panSensitivity = 0.0001; // Adjust this for drag speed (pixels to world units) - Remis une valeur par défaut
         var isPanning = false; // Flag pour savoir si un pan est en cours
         var baseScaleOnPinchStart = 1; // Pour stocker l'échelle au début du pinch
 
