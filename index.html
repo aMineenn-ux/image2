@@ -1,150 +1,121 @@
 <!DOCTYPE html>
+
 <html>
-<head>
+
+  <head>
+
     <meta charset="utf-8">
-    <title>AR Image Debug</title>
+
+    <title>AR Image with Pinch-to-Zoom</title>
 
     <!-- A-Frame Library -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+
+    <script src=https://aframe.io/releases/1.2.0/aframe.min.js></script>
+
     <!-- AR.js Library for Web AR -->
-    <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.7.5/aframe/build/aframe-ar.min.js"></script>
+
+    <script src=https://cdn.rawgit.com/jeromeetienne/AR.js/1.7.5/aframe/build/aframe-ar.min.js></script>
+
     <!-- Hammer.js Library for Gesture Recognition -->
-    <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
-</head>
 
-<body style="margin: 0; overflow: hidden;">
+    <script src=https://hammerjs.github.io/dist/hammer.min.js></script>
 
-    <!-- AR Scene - IMPORTANT: debugUIEnabled=true -->
-    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: true;'>
+  </head>
 
-        <!-- Marqueur Hiro -->
-        <a-marker preset="hiro">
-            <a-image id="resizableImage"
-                     src="output_visualization.svg"
-                     position="0 0 0"
-                     rotation="-90 0 0"
-                     width="1"
-                     height="0.75"
-                     scale="1 1 1">
-             </a-image>
-             <!-- <a-box id="resizableImage" color="tomato" position="0 0.5 0" scale="0.5 0.5 0.5"></a-box> -->
-        </a-marker>
+ 
 
-         <!-- Caméra fixe -->
-        <a-entity camera></a-entity>
+  <body style="margin: 0; overflow: hidden;">
+
+    <!-- AR Scene -->
+
+    <a-scene embedded arjs>
+
+      <!-- 2D Image to Display in AR -->
+
+      <a-image id="resizableImage" src="output_visualization.svg" position="0 1.5 -3" width="4" height="3"></a-image>
+
     </a-scene>
 
+ 
+
     <!-- File Input for User to Upload an Image -->
-    <div style="position: fixed; top: 10px; left: 10px; z-index: 1;">
-        <input type="file" id="imageUpload" accept="image/*" />
+
+    <div style="position: fixed; top: 10px; left: 10px;">
+
+      <input type="file" id="imageUpload" accept="image/*" />
+
     </div>
 
-    <!-- Script for Handling Gestures and Image Upload -->
+ 
+
+    <!-- Script for Handling Pinch-to-Zoom Gesture and Image Upload -->
+
     <script>
-        document.addEventListener('DOMContentLoaded', (event) => {
-            var image = document.getElementById('resizableImage');
-            if (!image) {
-                console.error("L'élément 'resizableImage' n'a pas été trouvé ! Vérifiez l'ID.");
-                return;
-            }
-            console.log("Élément 'resizableImage' trouvé:", image.tagName);
 
-            var isPanning = false;
-            var startPosition = null;
-            var startScale = null;
-            const panSensitivity = 0.003;
+      // Get the image element in the AR scene
 
-            var mc = new Hammer(document.body);
-            mc.get('pinch').set({ enable: true });
-            mc.get('pan').set({ direction: Hammer.DIRECTION_ALL, enable: true });
+      var image = document.getElementById('resizableImage');
 
-            // --- Pinch Listeners ---
-             mc.on('pinchstart', function(ev) {
-                if (image && !isPanning) {
-                    startScale = image.getAttribute('scale');
-                     console.log("Pinch Start - Start Scale:", startScale);
-                }
-             });
+      var scale = 1;  // Initial scale of the image
 
-            mc.on('pinch', function (ev) {
-                if (isPanning || !startScale || !image) return;
-                let newScaleFactor = ev.scale;
-                image.setAttribute('scale', {
-                    x: startScale.x * newScaleFactor,
-                    y: startScale.y * newScaleFactor,
-                    z: startScale.z
-                });
-            });
+ 
 
-             mc.on('pinchend', function(ev) {
-                 if (!isPanning) {
-                    startScale = null;
-                    console.log("Pinch End");
-                 }
-             });
+      // Initialize Hammer.js on the entire document body
 
-            // --- Pan Listeners ---
-            mc.on('panstart', function(ev) {
-                if (image && !startScale) {
-                    isPanning = true;
-                    startPosition = image.getAttribute('position');
-                     console.log("Pan Start - Start Position:", startPosition);
-                }
-            });
+      var mc = new Hammer(document.body);
 
-            mc.on('panmove', function (ev) {
-                if (!isPanning || !startPosition || !image) return;
-                let newX = startPosition.x + ev.deltaX * panSensitivity;
-                let newY = startPosition.y;
-                let newZ = startPosition.z - ev.deltaY * panSensitivity;
-                image.setAttribute('position', { x: newX, y: newY, z: newZ });
-            });
+ 
 
-            mc.on('panend', function(ev) {
-                if (isPanning) {
-                    isPanning = false;
-                    startPosition = null;
-                    console.log("Pan End");
-                }
-            });
+      // Enable pinch gesture recognition
 
-            // --- Image Upload ---
-            var imageUpload = document.getElementById('imageUpload');
-            if(imageUpload) {
-                imageUpload.addEventListener('change', function (event) {
-                    var file = event.target.files[0];
-                    if (file && image) {
-                        var reader = new FileReader();
-                        reader.onload = function (e) {
-                            var currentImageElement = document.getElementById('resizableImage');
-                            if (currentImageElement.tagName === 'A-IMAGE') {
-                                currentImageElement.setAttribute('src', e.target.result);
-                                currentImageElement.setAttribute('scale', '1 1 1');
-                                currentImageElement.setAttribute('position', '0 0 0');
-                                startScale = {x:1, y:1, z:1};
-                                console.log("Image chargée et réinitialisée");
-                            } else {
-                                console.log("Upload: L'élément cible n'est pas une A-IMAGE, src non appliqué.");
-                            }
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            } else {
-                 console.error("Input 'imageUpload' non trouvé !");
-            }
+      mc.get('pinch').set({ enable: true });
 
-            // --- Prevent Default Touch Actions ---
-            // Les lignes suivantes avec e.preventDefault() ont été retirées
-            // document.body.addEventListener('touchstart', function(e) {
-            //     // if (e.target.tagName !== 'INPUT') e.preventDefault(); // Ligne retirée
-            // }, { passive: false }); // Vous pouvez aussi retirer { passive: false } si vous enlevez preventDefault
-            // document.body.addEventListener('touchmove', function(e) {
-            //     // e.preventDefault(); // Ligne retirée
-            // }, { passive: false }); // Vous pouvez aussi retirer { passive: false }
+ 
 
-            console.log("Script initialisé (sans preventDefault).");
-        });
+      // Pinch event listener to scale the image
+
+      mc.on('pinch', function (ev) {
+
+        // Update scale based on pinch gesture
+
+        scale = ev.scale;
+
+ 
+
+        // Apply the new scale to the image element (scaling only width and height)
+
+        image.setAttribute('scale', `${scale} ${scale} 1`);
+
+      });
+
+ 
+
+      // Image upload functionality
+ 
+      document.getElementById('imageUpload').addEventListener('change', function (event) {
+
+        var file = event.target.files[0]; // Get the selected file
+
+        if (file) {
+
+          var reader = new FileReader();
+
+          reader.onload = function (e) {
+
+            // Set the image source to the uploaded image
+
+            image.setAttribute('src', e.target.result);
+
+          };
+
+          reader.readAsDataURL(file); // Read the file as a Data URL
+
+        }
+
+      });
+
     </script>
-</body>
+
+  </body>
+
 </html>
