@@ -2,13 +2,13 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>A-Frame Image with Pinch-to-Zoom and Pan</title> <!-- Titre mis à jour -->
+    <title>AR Image with Pinch-to-Zoom and Pan (No VR Button)</title> <!-- Titre mis à jour -->
 
     <!-- A-Frame Library -->
     <script src=https://aframe.io/releases/1.2.0/aframe.min.js></script>
 
-    <!-- AR.js Library for Web AR - SUPPRIMÉE -->
-    <!-- <script src=https://cdn.rawgit.com/jeromeetienne/AR.js/1.7.5/aframe/build/aframe-ar.min.js></script> -->
+    <!-- AR.js Library for Web AR -->
+    <script src=https://cdn.rawgit.com/jeromeetienne/AR.js/1.7.5/aframe/build/aframe-ar.min.js></script>
 
     <!-- Hammer.js Library for Gesture Recognition -->
     <script src=https://hammerjs.github.io/dist/hammer.min.js></script>
@@ -16,36 +16,28 @@
 
 <body style="margin: 0; overflow: hidden;">
 
-    <!-- A-Frame Scene standard (sans 'embedded arjs') -->
-    <a-scene>
-        <!-- Ajout d'une caméra A-Frame standard -->
-        <a-camera position="0 1.6 0"></a-camera>
-
-        <!-- Image 2D à afficher -->
-        <!-- La position est relative à l'origine de la scène -->
+    <!-- AR Scene - SEULE MODIFICATION ICI -->
+    <a-scene embedded arjs vr-mode-ui="enabled: false">
+        <!-- 2D Image to Display in AR -->
         <a-image id="resizableImage" src="output_visualization.svg" position="0 1.5 -3" width="4" height="3"></a-image>
-
-        <!-- Optionnel : Un fond ou un environnement pour mieux voir -->
-        <a-sky color="#ECECEC"></a-sky>
-
     </a-scene>
 
     <!-- File Input for User to Upload an Image -->
-    <div style="position: fixed; top: 10px; left: 10px; z-index: 1;"> <!-- Ajout de z-index pour être sûr qu'il soit au-dessus -->
+    <div style="position: fixed; top: 10px; left: 10px;">
         <input type="file" id="imageUpload" accept="image/*" />
     </div>
 
     <!-- Script for Handling Gestures and Image Upload -->
     <script>
-        // Get the image element in the A-Frame scene
+        // Get the image element in the AR scene
         var image = document.getElementById('resizableImage');
 
         // --- Variables for tracking state ---
         var currentScale = { x: 1, y: 1, z: 1 }; // Store current scale factors
-        // Utiliser la position initiale définie dans l'attribut A-Frame
-        var initialPosition = image.getAttribute('position');
+        var initialPosition = { x: 0, y: 0, z: 0 }; // To store position at the start of a pan
+        var panSensitivity = 0.01; // Adjust this for drag speed (pixels to world units) - Remis une valeur par défaut
         var isPanning = false; // Flag pour savoir si un pan est en cours
-        var panSensitivity = 0.005; // Remis une valeur plus raisonnable, ajustez au besoin
+        var baseScaleOnPinchStart = 1; // Pour stocker l'échelle au début du pinch
 
         // Initialize Hammer.js on the entire document body
         var mc = new Hammer(document.body);
@@ -63,10 +55,12 @@
         mc.on('pinchstart', function(ev) {
              // Si on pince, on ne déplace pas en même temps
              isPanning = false;
+             // Stocker l'échelle actuelle au début du pincement
+             baseScaleOnPinchStart = currentScale.x;
         });
         mc.on('pinch', function (ev) {
-            // Utilise l'échelle actuelle comme base pour appliquer la nouvelle échelle relative
-            let scaleValue = currentScale.x * ev.scale; // ev.scale est relatif au début du pinch
+            // Appliquer l'échelle relative de Hammer à l'échelle de base
+            let scaleValue = baseScaleOnPinchStart * ev.scale;
 
             image.setAttribute('scale', `${scaleValue} ${scaleValue} 1`);
         });
@@ -78,8 +72,8 @@
 
         // Pan start listener - records the starting X and Y position
         mc.on('panstart', function(ev) {
-            // Ne commence le pan que si ce n'est pas un pinch (Hammer gère souvent ça, mais sécurité)
-            if (ev.pointers.length === 1) { // Déplacement avec un seul doigt
+            // Ne commence le pan que si ce n'est pas un pinch (un seul doigt)
+            if (ev.pointers.length === 1 && !mc.get('pinch').isRecognizing) { // Vérifie aussi que pinch n'est pas actif
                  isPanning = true;
                  initialPosition = image.getAttribute('position');
             } else {
@@ -105,8 +99,8 @@
         });
 
         mc.on('panend pancancel', function(ev) {
+            // Met à jour la position initiale pour le prochain pan si on a effectivement panné
             if(isPanning) {
-                // Met à jour la position initiale pour le prochain pan
                 initialPosition = image.getAttribute('position');
             }
             isPanning = false;
@@ -122,6 +116,7 @@
                     image.setAttribute('src', e.target.result);
                     // Reset scale and position when a new image is loaded
                     currentScale = { x: 1, y: 1, z: 1 };
+                    baseScaleOnPinchStart = 1; // Réinitialise aussi l'échelle de base
                     image.setAttribute('scale', '1 1 1');
                     // Remet à la position initiale définie dans le HTML
                     image.setAttribute('position', '0 1.5 -3');
