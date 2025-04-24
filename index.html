@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR Image with Stepped Pan & Pinch Zoom</title> <!-- Titre mis à jour -->
+    <title>AR Image with Stepped Pan & Pinch Zoom</title>
 
     <!-- A-Frame Library -->
     <script src=https://aframe.io/releases/1.2.0/aframe.min.js></script>
@@ -38,15 +38,10 @@
         var baseScaleOnPinchStart = 1;
 
         // --- NOUVEAUX PARAMÈTRES POUR LE DÉPLACEMENT PAR PAS ---
-        // Taille d'un pas (en unités A-Frame)
-        var stepSizeX = 0.2; // Déplacement horizontal par pas
-        var stepSizeY = 0.2; // Déplacement vertical par pas
-
-        // Seuil en pixels pour déclencher un pas
-        var pixelThresholdX = 40; // Nb pixels horizontal à parcourir pour un pas
-        var pixelThresholdY = 40; // Nb pixels vertical à parcourir pour un pas
-
-        // Pour suivre le nombre de pas déjà effectués dans ce geste
+        var stepSizeX = 0.2;
+        var stepSizeY = 0.2;
+        var pixelThresholdX = 40;
+        var pixelThresholdY = 40;
         var stepsTakenX = 0;
         var stepsTakenY = 0;
         // ---------------------------------------------------------
@@ -62,9 +57,9 @@
 
         // --- Event Listeners ---
 
-        // == Pinch (Zoom) - Pas de changement majeur ==
+        // == Pinch (Zoom) ==
         mc.on('pinchstart', function(ev) {
-             isPanning = false; // Arrêter le pan si on pince
+             isPanning = false;
              baseScaleOnPinchStart = currentScale.x;
         });
         mc.on('pinch', function (ev) {
@@ -76,16 +71,12 @@
         });
 
 
-        // == Pan (Déplacement) - LOGIQUE MODIFIÉE ==
+        // == Pan (Déplacement par pas) ==
         mc.on('panstart', function(ev) {
-            // Commence le pan uniquement si 1 doigt et pas en train de pincer
             if (ev.pointers.length === 1 && !mc.get('pinch').isRecognizing) {
                  isPanning = true;
-                 // Enregistre la position au TOUT début du geste
                  initialPosition = image.getAttribute('position');
-                 // Initialise la position courante (qui sera modifiée par pas)
-                 currentPosition = { ...initialPosition }; // Copie de l'objet
-                 // Réinitialise les compteurs de pas pour ce nouveau geste
+                 currentPosition = { ...initialPosition };
                  stepsTakenX = 0;
                  stepsTakenY = 0;
             } else {
@@ -94,16 +85,11 @@
         });
 
         mc.on('panmove', function (ev) {
-             if (!isPanning) return; // Ne rien faire si on n'est pas en mode pan
+             if (!isPanning) return;
 
-             // ev.deltaX / ev.deltaY = Déplacement TOTAL en pixels depuis panstart
-
-             // Calculer combien de pas CORRESPONDENT au déplacement total en pixels
              let targetStepsX = Math.floor(ev.deltaX / pixelThresholdX);
-             // Pas besoin d'inverser ici, on regarde juste la magnitude du déplacement en pixels
              let targetStepsY = Math.floor(ev.deltaY / pixelThresholdY);
 
-             // Vérifier si le nombre de pas cible a changé depuis la dernière fois
              let needsUpdate = false;
              if (targetStepsX !== stepsTakenX) {
                  currentPosition.x = initialPosition.x + (targetStepsX * stepSizeX);
@@ -111,47 +97,43 @@
                  needsUpdate = true;
              }
              if (targetStepsY !== stepsTakenY) {
-                 // Appliquer l'inversion Y ici si nécessaire lors du calcul de la position finale
-                 // Si le déplacement était correct SANS * -1 avant, ne PAS l'ajouter ici.
-                 // Si le déplacement était correct AVEC * -1 avant, AJOUTER * -1 ici.
-                 currentPosition.y = initialPosition.y + (targetStepsY * stepSizeY * -1); // <-- AJUSTER SI BESOIN (enlever ou garder * -1)
+                 // Enlevez le '* -1' si le mouvement vertical était correct SANS inversion avant
+                 currentPosition.y = initialPosition.y + (targetStepsY * stepSizeY * -1);
                  stepsTakenY = targetStepsY;
                  needsUpdate = true;
              }
 
-             // Mettre à jour la position de l'image A-Frame SEULEMENT si un pas a été franchi
              if (needsUpdate) {
                  image.setAttribute('position', {
                      x: currentPosition.x,
                      y: currentPosition.y,
-                     z: initialPosition.z // Garde la profondeur Z initiale
+                     z: initialPosition.z
                  });
              }
         });
 
         mc.on('panend pancancel', function(ev) {
-            // Pas forcément besoin de faire qqchose ici, mais on reset le flag
             isPanning = false;
-            // On pourrait enregistrer la position finale comme nouvelle 'initialPosition'
-            // si on voulait que le prochain pan parte de là, mais la logique actuelle
-            // repart toujours de la position au début du geste 'panstart'.
-            // initialPosition = image.getAttribute('position'); // Optionnel
         });
 
-        // == Image Upload - Pas de changement ==
+        // == Image Upload - CORRIGÉ ==
         document.getElementById('imageUpload').addEventListener('change', function (event) {
-            var file = event.event.target.files[0];
+            // Correction de la faute de frappe ici : event.target au lieu de event.event.target
+            var file = event.target.files[0];
             if (file) {
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     image.setAttribute('src', e.target.result);
+                    // Reset scale and position
                     currentScale = { x: 1, y: 1, z: 1 };
                     baseScaleOnPinchStart = 1;
                     image.setAttribute('scale', '1 1 1');
                     let resetPos = {x: 0, y: 1.5, z: -3}; // Position initiale
                     image.setAttribute('position', resetPos);
-                    initialPosition = { ...resetPos }; // Mettre à jour la var JS
+                    initialPosition = { ...resetPos }; // Mettre à jour les vars JS aussi
                     currentPosition = { ...resetPos };
+                    stepsTakenX = 0; // Réinitialiser les pas aussi
+                    stepsTakenY = 0;
                 };
                 reader.readAsDataURL(file);
             }
