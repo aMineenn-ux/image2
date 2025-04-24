@@ -86,7 +86,7 @@
              if (!isPanning) return; // Ne déplace pas si on est en train de pincer ou si pan non démarré correctement
 
             // Calculate the new X and Y positions based on initial position and drag amount
-            let newX = initialPosition.x + (ev.deltaX * panSensitivity*-1);
+            let newX = initialPosition.x + (ev.deltaX * panSensitivitx);
             // Inverser Y car l'axe Y de l'écran est souvent inversé par rapport à A-Frame
             let newY = initialPosition.y + (ev.deltaY * panSensitivity);
 
