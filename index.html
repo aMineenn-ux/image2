@@ -93,9 +93,9 @@
                     // Set the image source to the uploaded image
                     image.setAttribute('src', e.target.result);
                     // Reset scale and position when a new image is loaded (optional)
-                    // currentScale = { x: 1, y: 1, z: 1 };
-                    // image.setAttribute('scale', '1 1 1');
-                    // image.setAttribute('position', '0 1.5 -3'); // Ou une autre position initiale désirée
+                    currentScale = { x: 1, y: 1, z: 1 };
+                    image.setAttribute('scale', '1 1 1');
+                    image.setAttribute('position', '0 1.5 -3'); // Ou une autre position initiale désirée
                 };
                 reader.readAsDataURL(file); // Read the file as a Data URL
             }
