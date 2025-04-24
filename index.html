@@ -17,7 +17,7 @@
     // --- Variables for tracking state ---
     var currentScale = { x: 1, y: 1, z: 1 }; // Store current scale factors
     var initialPosition = { x: 0, y: 0, z: 0 }; // To store position at the start of a pan
-    var panSensitivity = 0.00000001; // Adjust this for drag speed (pixels to world units)
+    var panSensitivity = 0.0001; // Adjust this for drag speed (pixels to world units)
 
     // Initialize Hammer.js on the entire document body
     var mc = new Hammer(document.body);
