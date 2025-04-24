@@ -1,121 +1,124 @@
 <!DOCTYPE html>
-
 <html>
-
-  <head>
-
+<head>
     <meta charset="utf-8">
-
-    <title>AR Image with Pinch-to-Zoom</title>
+    <title>AR Image with Pinch-to-Zoom and Pan</title> <!-- Updated Title -->
 
     <!-- A-Frame Library -->
-
-    <script src=https://aframe.io/releases/1.2.0/aframe.min.js></script>
-
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <!-- AR.js Library for Web AR -->
-
-    <script src=https://cdn.rawgit.com/jeromeetienne/AR.js/1.7.5/aframe/build/aframe-ar.min.js></script>
-
+    <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.7.5/aframe/build/aframe-ar.min.js"></script>
     <!-- Hammer.js Library for Gesture Recognition -->
+    <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
+</head>
 
-    <script src=https://hammerjs.github.io/dist/hammer.min.js></script>
-
-  </head>
-
- 
-
-  <body style="margin: 0; overflow: hidden;">
+<body style="margin: 0; overflow: hidden;">
 
     <!-- AR Scene -->
-
     <a-scene embedded arjs>
-
-      <!-- 2D Image to Display in AR -->
-
-      <a-image id="resizableImage" src="output_visualization.svg" position="0 1.5 -3" width="4" height="3"></a-image>
-
+        <!-- 2D Image to Display in AR -->
+        <!-- Initial position might need adjustment based on testing -->
+        <a-image id="resizableImage" src="output_visualization.svg" position="0 1.5 -3" width="4" height="3" scale="1 1 1"></a-image>
     </a-scene>
 
- 
-
     <!-- File Input for User to Upload an Image -->
-
-    <div style="position: fixed; top: 10px; left: 10px;">
-
-      <input type="file" id="imageUpload" accept="image/*" />
-
+    <div style="position: fixed; top: 10px; left: 10px; z-index: 1;"> <!-- Added z-index -->
+        <input type="file" id="imageUpload" accept="image/*" />
     </div>
 
- 
-
-    <!-- Script for Handling Pinch-to-Zoom Gesture and Image Upload -->
-
+    <!-- Script for Handling Gestures and Image Upload -->
     <script>
+        // Get the image element in the AR scene
+        var image = document.getElementById('resizableImage');
+        var initialScale = { x: 1, y: 1, z: 1 }; // Store initial scale if needed, though we overwrite it
+        var currentScale = 1; // Track current scale factor for pinch
 
-      // Get the image element in the AR scene
+        // Variables to track panning state
+        var isPanning = false;
+        var startPosition = { x: 0, y: 0, z: 0 }; // To store position when pan starts
 
-      var image = document.getElementById('resizableImage');
+        // Define sensitivity for panning (adjust this value for faster/slower movement)
+        const panSensitivity = 0.005; // Smaller value = slower movement
 
-      var scale = 1;  // Initial scale of the image
+        // Initialize Hammer.js on the entire document body
+        var mc = new Hammer(document.body);
 
- 
+        // --- Enable Gestures ---
+        mc.get('pinch').set({ enable: true });
+        mc.get('pan').set({ direction: Hammer.DIRECTION_ALL, enable: true }); // Enable panning in all directions
 
-      // Initialize Hammer.js on the entire document body
+        // --- Pinch Event Listener (Zoom) ---
+        mc.on('pinch', function (ev) {
+            // Prevent panning during pinch if desired (optional)
+             if (isPanning) return;
 
-      var mc = new Hammer(document.body);
+            // Update scale based on pinch gesture relative to the initial scale
+            currentScale = ev.scale; // Hammer reports scale relative to the start of the pinch
 
- 
+            // Apply the new scale to the image element (scaling x and y)
+            // Note: A-Frame's scale attribute applies multiplicatively to the original size
+            // We directly set the scale factor here.
+            image.setAttribute('scale', `${currentScale} ${currentScale} 1`);
+        });
 
-      // Enable pinch gesture recognition
+        // --- Pan Event Listeners (Move) ---
+        mc.on('panstart', function(ev) {
+            isPanning = true;
+            // Store the starting position of the image when panning begins
+            startPosition = image.getAttribute('position');
+        });
 
-      mc.get('pinch').set({ enable: true });
+        mc.on('panmove', function (ev) {
+            if (!isPanning || !startPosition) return; // Only pan if panning started and we have a start position
 
- 
+            // Calculate change in position based on pan delta
+            // ev.deltaX/Y is the displacement since panstart
+            // We need to invert deltaY because screen Y increases downwards, A-Frame Y increases upwards
+            let newX = startPosition.x + ev.deltaX * panSensitivity;
+            let newY = startPosition.y - ev.deltaY * panSensitivity; // Invert Y
+            let newZ = startPosition.z; // Keep Z the same
 
-      // Pinch event listener to scale the image
+            // Apply the new position to the image element
+            image.setAttribute('position', { x: newX, y: newY, z: newZ });
+        });
 
-      mc.on('pinch', function (ev) {
+        mc.on('panend', function(ev) {
+            isPanning = false;
+            startPosition = null; // Clear start position
+            // Optional: If you want the scale to reset after pinch, you could reset currentScale here or in pinchstart/pinchend
+        });
 
-        // Update scale based on pinch gesture
 
-        scale = ev.scale;
+        // --- Image Upload Functionality ---
+        document.getElementById('imageUpload').addEventListener('change', function (event) {
+            var file = event.target.files[0]; // Get the selected file
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    // Set the image source to the uploaded image
+                    image.setAttribute('src', e.target.result);
+                    // Optional: Reset scale and position when a new image is loaded
+                    image.setAttribute('scale', '1 1 1');
+                    currentScale = 1;
+                    // You might want to reset position too, e.g.:
+                    // image.setAttribute('position', '0 1.5 -3');
+                };
+                reader.readAsDataURL(file); // Read the file as a Data URL
+            }
+        });
 
- 
+        // --- Prevent Default Touch Actions (Optional but Recommended) ---
+        // Prevents page scrolling/zooming while interacting with AR scene
+        document.body.addEventListener('touchstart', function(e) {
+             if (e.target.tagName !== 'INPUT') { // Allow interaction with file input
+                 e.preventDefault();
+             }
+        }, { passive: false });
+        document.body.addEventListener('touchmove', function(e) {
+             e.preventDefault();
+        }, { passive: false });
 
-        // Apply the new scale to the image element (scaling only width and height)
-
-        image.setAttribute('scale', `${scale} ${scale} 1`);
-
-      });
-
- 
-
-      // Image upload functionality
-
-      document.getElementById('imageUpload').addEventListener('change', function (event) {
-
-        var file = event.target.files[0]; // Get the selected file
-
-        if (file) {
-
-          var reader = new FileReader();
-
-          reader.onload = function (e) {
-
-            // Set the image source to the uploaded image
-
-            image.setAttribute('src', e.target.result);
-
-          };
-
-          reader.readAsDataURL(file); // Read the file as a Data URL
-
-        }
-
-      });
 
     </script>
-
-  </body>
-
+</body>
 </html>
