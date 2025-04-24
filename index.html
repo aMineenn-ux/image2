@@ -88,7 +88,7 @@
             // Calculate the new X and Y positions based on initial position and drag amount
             let newX = initialPosition.x + (ev.deltaX * panSensitivity);
             // Inverser Y car l'axe Y de l'écran est souvent inversé par rapport à A-Frame
-            let newY = initialPosition.y + (ev.deltaY * panSensitivity * -1);
+            let newY = initialPosition.y + (ev.deltaY * panSensitivity * 1);
 
             // Apply the new position (changing X and Y, keeping Z)
             image.setAttribute('position', {
