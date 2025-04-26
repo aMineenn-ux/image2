@@ -1,0 +1,124 @@
+# Intéressé par une collaboration ? Contactez-moi :
+# Facebook: Rms lido
+# WhatsApp: +261 34 59 743 21
+# Portfolio: (https://elido-ramiandrisoa.vercel.app)
+
+import tkinter as tk
+from tkinter import colorchooser, ttk
+
+class PaintSimplifie:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Paint Simplifié")
+        self.master.geometry("800x600")
+        self.master.resizable(True, True)
+        self.master.configure(bg="#f0f0f0")
+        
+        self.current_color = "black"
+        self.brush_size = 3
+        self.drawing = False
+        self.last_x, self.last_y = 0, 0
+        
+        self.create_widgets()
+        
+        self.canvas.bind("<Button-1>", self.start_draw)
+        self.canvas.bind("<B1-Motion>", self.draw)
+        self.canvas.bind("<ButtonRelease-1>", self.stop_draw)
+        
+    def create_widgets(self):
+        self.toolbar = tk.Frame(self.master, bg="#e1e1e1", height=40)
+        self.toolbar.pack(side=tk.TOP, fill=tk.X)
+        
+        self.color_button = tk.Button(
+            self.toolbar, text="Couleur", bg=self.current_color, fg="white",
+            command=self.choose_color, width=10, height=1
+        )
+        self.color_button.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        colors = ["black", "red", "green", "blue", "yellow", "orange", "purple", "white"]
+        for color in colors:
+            btn = tk.Button(
+                self.toolbar, bg=color, width=3, height=1,
+                command=lambda c=color: self.set_color(c)
+            )
+            btn.pack(side=tk.LEFT, padx=2, pady=5)
+        
+        tk.Label(self.toolbar, text="Taille:", bg="#e1e1e1").pack(side=tk.LEFT, padx=5)
+        
+        self.size_scale = ttk.Scale(
+            self.toolbar, from_=1, to=50, orient=tk.HORIZONTAL,
+            command=self.change_brush_size, length=100
+        )
+        self.size_scale.set(self.brush_size)
+        self.size_scale.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        self.size_label = tk.Label(self.toolbar, text=str(self.brush_size), bg="#e1e1e1", width=3)
+        self.size_label.pack(side=tk.LEFT, pady=5)
+        
+        self.clear_button = tk.Button(
+            self.toolbar, text="Effacer tout", command=self.clear_canvas,
+            width=10, height=1
+        )
+        self.clear_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        
+        self.eraser_button = tk.Button(
+            self.toolbar, text="Gomme", command=self.toggle_eraser,
+            width=8, height=1
+        )
+        self.eraser_button.pack(side=tk.RIGHT, padx=5, pady=5)
+        
+        self.canvas = tk.Canvas(self.master, bg="white")
+        self.canvas.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    
+    def start_draw(self, event):
+        self.drawing = True
+        self.last_x, self.last_y = event.x, event.y
+    
+    def draw(self, event):
+        if self.drawing:
+            x, y = event.x, event.y
+            self.canvas.create_line(
+                self.last_x, self.last_y, x, y,
+                width=self.brush_size,
+                fill=self.current_color,
+                capstyle=tk.ROUND,
+                smooth=tk.TRUE
+            )
+            self.last_x, self.last_y = x, y
+    
+    def stop_draw(self, event):
+        self.drawing = False
+    
+    def choose_color(self):
+        color = colorchooser.askcolor(initialcolor=self.current_color)
+        if color[1] is not None:
+            self.current_color = color[1]
+            self.color_button.configure(bg=self.current_color)
+            
+    def set_color(self, color):
+        self.current_color = color
+        self.color_button.configure(bg=self.current_color)
+        if color == "white" or color == "yellow":
+            self.color_button.configure(fg="black")
+        else:
+            self.color_button.configure(fg="white")
+    
+    def change_brush_size(self, value):
+        self.brush_size = int(float(value))
+        self.size_label.configure(text=str(self.brush_size))
+    
+    def clear_canvas(self):
+        self.canvas.delete("all")
+    
+    def toggle_eraser(self):
+        if self.current_color == "white":
+            self.set_color("black")
+            self.eraser_button.configure(text="Gomme")
+        else:
+            self.set_color("white")
+            self.eraser_button.configure(text="Crayon")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PaintSimplifie(root)
+    root.mainloop()
